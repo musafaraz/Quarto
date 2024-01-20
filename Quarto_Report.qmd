@@ -1,0 +1,176 @@
+---
+title: "2021 Census Reveals a Broken Glass Ceiling: A Transformative Shift"
+format:
+  html:
+    code-fold: true
+    code-link: true
+    embed-resources: true
+    toc: true
+    number-sections: true
+    warning: false
+bibliography: references.bib
+---
+
+# Introduction
+
+In the exploration of this data set, a unique narrative emerges as we investigate the relationship between gender and income. A narrative that unfolds a trend that challenges conventional norms. The proverbial "Glass Ceiling", an invisible barrier that hinders and acts as an obstacle in the way of success for women, was found to be shattered [@inam2020]. For, there exists evidence that females, irrespective of ethnicity have outperformed their male counterparts.
+
+This provided dataset consists of a total of 9 variables with prominent ones being Age, Income, and Highest Education. Our focus will be based on income, gender, highest education, and ethnicity. Additionally, color pallets for visualization have been selected to facilitate color blind individuals.
+
+```{r}
+#| include: false
+library(tidyverse)
+library(ggplot2) 
+library(ggthemes) 
+library(heatmaply)
+library(readr)
+library(viridis)
+df <- read_csv("ASSIGN.csv")
+```
+
+Data has been manipulated with help of tidyverse such as changing column names, sectioning and subdividing columns[@tidyverse]. Gggplot2 and viridis packages have been used in conjunction to provide access for color blind individuals [@ggplot2]. Furthermore, it has been convenient to use our dataset with help of reader library[@readr].
+
+# Exploration and Comparison: A Level Playing Field
+
+This section is dedicated to the visual analysis of how key factors such as education, age, and marital status are distributed across genders. Gender has been modified and realized to produce the graph and filtered by age group with the help of ggplot. This has been done so that the working-age population (18-55) can be identified. Initially, we learn that the number of females is not greater than males by a significant magnitude as illustrated in Figure 1. Therefore, there is a low chance of bias on the basis of numerical strength.
+
+A higher education level often correlates to a higher income [@wu2021a]. Furthermore, income is expected to rise with age [@araghi2019]. Therefore, age and education are visualized in Figure 2 and Figure 3 respectively.
+
+```{r}
+#| include: true
+df <- df %>% rename(HED = `Highest Ed`) # Renaming the 'Highest Ed' column to 'HED'
+df_filtered <- df %>%
+  filter(!is.na(HED), !is.na(Female)) %>%
+  mutate(
+    Gender = ifelse(Female == 0, "Female", "Male"),  # Renaming and creating subgroups for age
+    Age_Group = case_when(
+      Age >= 18 & Age <= 35 ~ "18-35",
+      Age >= 36 & Age <= 55 ~ "36-55",
+      Age > 55 ~ "55+",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  group_by(Age_Group, Gender) %>%
+  summarise(count = n()) %>%
+  filter(!is.na(Age_Group))  # Filtering out NA rows in Age_Group
+
+p <- df_filtered %>% # Creating a ggplot object and adding count labels on bars
+  ggplot(aes(x = Age_Group, y = count, fill = Gender, label = count)) +  # Using 'Gender' column and adding count label
+  geom_bar(stat = "identity", position = "stack", alpha = 0.7) +  # Creating stacked bar plot
+  geom_text(position = position_stack(vjust = 0.5), size = 3) +  # Adding count labels
+  labs(
+    title = "Figure 1: Distribution of Females and Males by Age Group",  # Title and axis labels
+    x = "Age Group",
+    y = "Count",
+    fill = "Gender"
+  ) +
+  scale_fill_viridis_d(option = "plasma") +  # Setting color palette
+  scale_fill_viridis_d(option = "viridis", begin = 0.2, end = 0.8) +  # Color-blind friendly
+  theme_minimal()  # Applying minimal theme
+
+ggplotly(p) # Converting ggplot object to an interactive plot using Plotly
+```
+
+Figure 2 illustrates a density plot for genders divided on the basis of Ethnicity created with the assistance of ggplot and geom_density [@ggplot2]. It tells us that the magnitude of females is marginally more than the number of males.
+
+```{r}
+df %>%
+ mutate(Gender = ifelse(Female == 0, "Female", "Male"), # Adding a 'Gender' column based on 'Female' values
+         Eth = factor(Eth)) %>%  # Converting Eth column to factor for categorical display
+  ggplot(aes(x = Age, fill = Gender)) +  # Mapping Age to x-axis and Gender to fill color
+  geom_density(alpha = 0.7) +  # Creating density plot with transparency
+  scale_fill_manual(values = c("#D55E00", "#56B4E9"), labels = c("Female", "Male")) +  # Setting color for gender
+  labs(
+    title = "Figure 2: Density Plot of Age by Gender",
+    x = "Age", y = "Density", fill = "Gender"  # Labels for title, axes, and legend
+  ) +facet_grid(~ Eth) +  # Faceting by ethnicity
+  scale_fill_viridis(discrete = TRUE) +  # Color-blind friendly palette for ethnicity
+  theme_minimal()  # Applying a minimal theme
+```
+
+Education level has been illustrated in Figure 3 which tells us that Females match their male counterparts for bachelor's degrees and outperform them in terms of Masters level education.
+
+```{r}
+df %>%
+  mutate(Gender = ifelse(Female == 0, "Female", "Male")) %>%  # Creating 'Gender' column based on 'Female' values
+  filter(!is.na(HED), !is.na(Female)) %>%  # Removing rows with missing values in 'HED' and 'Female' columns
+  ggplot(aes(x = factor(HED), fill = Gender)) +  # Mapping 'HED' to x-axis and 'Gender' to fill color
+  geom_bar(position = "dodge", alpha = 0.7) +  # Creating a dodged bar plot with transparency
+  geom_text(aes(label = after_stat(count)),  # Adding count labels on bars
+            stat = "count", position = position_dodge(width = 0.9), size = 4, color = "black") + #custom labels
+  labs(
+    title = "Figure 3: Distribution of Females and Males by Education",  # Title and axis labels
+    x = "Education Level", y = "Count", fill = "Gender"
+  ) +
+  scale_fill_manual(values = c("#D55E00", "#56B4E9"), labels = c("Female", "Male")) +  # Setting color labels
+  theme_minimal() +  # Applying a minimal theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) -> my_plot  # Rotating x-axis labels
+ggplotly(my_plot)  # Converting the ggplot object to an interactive plot using Plotly
+```
+
+# The Interesting Thing: A Shattered Glass Ceiling
+
+Having discovered that factors such as age and education were almost similar for males as well as females, it has been found that the median income for females is higher than the median income for males as suggested by Figure 4. The median income has been mentioned in Figure 4.
+
+Furthermore, the rise in female income has been observed irrespective of communities as the average female income is higher when compared to their male counterparts.
+
+Additionally, the lower end of female income is higher than the lower end of male across ethnicities with the exception of the Black ethnicity where the lower end income was almost similar.
+
+```{r}
+suppressWarnings({
+  df %>%
+    mutate(
+      Gender = ifelse(Female == 0, "Female", "Male"),
+      Eth = ifelse(is.na(Eth), "Unknown", as.character(Eth))  # Handling missing values in Eth column
+    ) %>%
+    select(-Female) %>%
+    ggplot(aes(x = Eth, y = INC, fill = Gender)) +
+    geom_boxplot(alpha = 0.7, outlier.shape = NA, width = 0.6, pattern = "O") +
+    stat_summary(fun = median, geom = "text", aes(label = scales::comma(..y..)),
+                 position = position_dodge(width = 0.75), vjust = -0.5, show.legend = FALSE) +  # Adding median labels
+    scale_fill_manual(values = c("#56B4E9", "#E69F00"), labels = c("Female", "Male"), guide = "none") +  # Removing legend for fill
+    labs(title = "Figure 4: Income Distribution by Ethnicity and Gender",
+         x = "Ethnicity", y = "Income") +
+    scale_y_continuous(labels = scales::comma, limits = c(0, 40000)) +
+    theme_minimal()
+})
+
+```
+
+Figure 3 has been generated using ggplot2 and dplyr libraries for generating a boxplot [@cox2019]. It categorizes genders and ethnicities while handling missing values. Median values have been printed on the visualization for better understanding.
+
+# The Critique: Limitations and assumptions
+
+The conclusion that females have higher incomes than males may assume direct comparisons without considering factors like job roles, industries, or working hours. For instance, due to a lack of information regarding working hours, it is not possible to further discern if there is any disparity between the genders. Furthermore, industries in which individuals are employed along with their designation would be beneficial to avoid any bias.
+
+It has been found that the magnitude of White ethnicity is overrepresented in the dataset as suggested by Figure 5 has the potential to lead to biases and generalization of findings. Additionally, there are missing values present in the dataset, which may be a case of data mishandling.
+
+The segmentation of age groups (18-35, 36-55, 55+), especially when there is a lack of information regarding the occupation or job of the individuals, might oversimplify the complex nature of labor force distributions. Additionally, another feature of the analysis could have been added such as identifying the role of women as Business owners or job creators.
+
+```{r}
+# Removing rows with missing income values
+df <- df[!is.na(df$INC), ]
+
+# Creating a bar plot for ethnicity with a color-blind friendly palette
+ggplot(df, aes(x = Eth)) +
+  geom_bar(fill = viridis_pal()(length(unique(df$Eth)))) + # Using viridis color palette
+  geom_text(
+    stat = "count", 
+    aes(label = stat(count)), 
+    vjust = -0.5, 
+    size = 3
+  ) + # Adding count labels to the bars
+  labs(
+    title = "Figure 5: Bar Plot of Ethnicity",
+    x = "Ethnicity",
+    y = "Count"
+  )
+```
+
+# Conclusion
+
+The exploration of the dataset has shown us interesting trends that challenge contemporary gender norms with respect to income. Contrary to historical trends, it has been found that females irrespective of ethnicity earn more than their male counterparts on average. Furthermore, the lower-end earning of females is more than the lower-end of males with a single exception of the Black ethnicity.
+
+While these findings suggest a transformative shift in gender dynamics, it's imperative to acknowledge certain limitations. The lack of granularity, particularly regarding job roles, industries, and working hours, hinders a comprehensive understanding of income disparities. Additional insights into employment sectors and designations could provide a more nuanced perspective.
+
+Moreover, the overrepresentation of certain ethnic groups in the dataset raises concerns about potential biases and generalization. Addressing missing values and ensuring a more balanced representation across ethnicities could enhance the robustness of future analyses.
